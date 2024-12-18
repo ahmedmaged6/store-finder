@@ -9,7 +9,7 @@ def fetch_nearby_stores_with_photos(latitude, longitude, radius=1000, place_type
     :param place_type: Type of place to search for.
     :return: A list of stores with name, location, address, and photos.
     """
-    api_key = "AIzaSyDSi3oBKowwDjoKHe1l5GkWpajXWC7qm6k"  # Replace with your Google Maps API key
+    api_key = "6AIzaSyDSi3oBKowwDjoKHe1l5GkWpajXWC7qm6k6"  # Replace with your Google Maps API key
     url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
     params = {
         "location": f"{latitude},{longitude}",
