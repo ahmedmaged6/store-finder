@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Stores</title>
+    <!-- Bootstrap CDN (Dark theme classes enabled) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Styles for Dark Theme -->
+    <style>
+        body {
+            background-color: #121212;  /* Dark background */
+            color: #e0e0e0;  /* Light text */
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #1f1f1f; /* Darker header */
+            color: #e0e0e0;  /* Light text in header */
+            border-radius: 8px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+
+        .header button {
+            background-color: #f39c12;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .header button:hover {
+            background-color: #e67e22;
+        }
+
+        .store-card {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: #2c2c2c;  /* Dark card background */
+            border: 1px solid #444;  /* Border to distinguish cards */
+            border-radius: 8px;
+        }
+
+        .store-card img {
+            width: 100%;
+            height: 300px;  /* Increased height */
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;  /* Centers the content horizontally */
+            flex-grow: 1;
+        }
+
+        .card-title, .card-text {
+            color: #e0e0e0;  /* Light text inside cards */
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .card {
+            height: 450px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .col-md-4 {
+            flex: 1 1 30%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+            .col-md-4 {
+                flex: 1 1 100%;
+            }
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+            transition: opacity 0.5s ease-in-out, height 0.5s ease-in-out;  /* Smooth transition for opacity and height change */
+        }
+
+        /* Fancy slogan styles */
+        #slogan {
+            display: none;  /* Initially hide the slogan */
+            font-size: 2rem;
+            color: #f39c12;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            animation: fadeIn 2s ease-in-out;  /* Add animation for fade-in */
+        }
+
+        #upperSlogan {
+            font-size: 2rem;
+            color: #f39c12;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            animation: fadeIn 2s ease-in-out;  /* Add animation for fade-in */
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Store Finder</h1>
+        <button id="findStoresButton" class="btn btn-primary">Find Stores Near You</button>
+    </div>
+
+    <div class="container mt-5">
+        <!-- Upper Slogan above the map -->
+        <div id="upperSlogan">Find the Best Stores Near You!</div>
+
+        <!-- Display the map -->
+        <div id="map"></div>
+
+        <!-- Fancy slogan -->
+        <div id="slogan">Your Shopping Adventure Awaits!</div>
+        <br>
+
+        <!-- Store cards -->
+        <div id="stores" class="row">
+            <!-- Store cards will appear here -->
+        </div>
+    </div>
+
+    <!-- Optional: Include Bootstrap and jQuery JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap" async defer></script>
+
+    <script>
+        let allStores = [];  // To hold all the stores data
+        let map, userMarker;
+
+        // Function to initialize the Google Map
+        function initMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+
+                    // Set the map's center to the user's current location with a zoom level of 16
+                    map = new google.maps.Map(document.getElementById("map"), {
+                        center: { lat: latitude, lng: longitude },
+                        zoom: 16,  // Increased zoom level to zoom in closer
+                    });
+
+                    // Add a marker for the user's current location
+                    userMarker = new google.maps.Marker({
+                        position: { lat: latitude, lng: longitude },
+                        map: map,
+                        title: "Your Location"
+                    });
+                }, function(error) {
+                    alert("Error: Unable to retrieve your location.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Function to display stores
+        function showStores(stores) {
+            const storesDiv = document.getElementById("stores");
+            storesDiv.innerHTML = "";  // Clear previous stores
+            if (stores.length === 0) {
+                storesDiv.innerHTML = "<p class='text-center text-light'>No stores found nearby.</p>";
+            } else {
+                stores.forEach(store => {
+                    const storeCard = `
+                        <div class="col-md-4">
+                            <div class="card store-card">
+                                <img src="${store.photo_url || 'https://via.placeholder.com/400?text=No+Image+Available'}" class="card-img-top" alt="${store.name}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${store.name}</h5>
+                                    <p class="card-text">${store.address}</p>
+                                    ${store.phone_number ? `<p class="card-text">Phone: ${store.phone_number}</p>` : ''}
+                                    <!-- Google Maps button -->
+                                    <a href="${store.google_maps_link}" target="_blank" class="btn btn-primary">Go to Google Maps</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    storesDiv.innerHTML += storeCard;
+                });
+            }
+        }
+
+        // Function to fetch stores using geolocation
+        function fetchStores(latitude, longitude) {
+            fetch("/find_stores", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ latitude, longitude }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                allStores = data;  // Store the fetched stores data
+                showStores(data);  // Display the fetched stores
+
+                // Hide the map after stores are fetched
+                document.getElementById("map").style.height = '0';  // Set height to 0
+                document.getElementById("map").style.opacity = 0;  // Set opacity to 0
+
+                // Show the animated slogan
+                document.getElementById("slogan").style.display = "block";
+            })
+            .catch(error => {
+                console.error("Error fetching stores:", error);
+                alert("An error occurred while fetching stores.");
+            });
+        }
+
+        // Function to get the user's location and trigger store search
+        function getLocationAndFindStores() {
+            // Hide the upper slogan when search starts
+            document.getElementById("upperSlogan").style.display = "none";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    fetchStores(latitude, longitude);  // Call function to fetch stores
+                }, function(error) {
+                    alert("Error: Unable to retrieve your location.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Event listener for the "Find Stores Near You" button
+        document.getElementById("findStoresButton").addEventListener("click", function() {
+            getLocationAndFindStores();  // Trigger the location and store fetch process
+        });
+    </script>
+</body>
+</html>
